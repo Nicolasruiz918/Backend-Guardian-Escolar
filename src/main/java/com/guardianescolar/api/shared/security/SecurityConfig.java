@@ -37,7 +37,7 @@ public class SecurityConfig {
                                 "/auth/password/reset")
                         .permitAll()
                         .requestMatchers("/health", "/actuator/**", "/v3/api-docs/**", "/swagger-ui.html",
-                                "/swagger-ui/**")
+                                "/swagger-ui/**", "/ws/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
