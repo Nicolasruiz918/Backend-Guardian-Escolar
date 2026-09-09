@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface JourneyHistoryRepository extends JpaRepository<JourneyHistory, UUID> {
 
     List<JourneyHistory> findTop100ByStudentIdOrderByRecordedAtDesc(UUID studentId);
+
+    List<JourneyHistory> findTop200ByStudentOwnerIdOrderByRecordedAtDesc(UUID ownerId);
 }

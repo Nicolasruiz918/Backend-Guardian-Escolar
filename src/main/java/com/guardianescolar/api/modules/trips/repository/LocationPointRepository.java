@@ -11,4 +11,8 @@ public interface LocationPointRepository extends JpaRepository<LocationPoint, UU
     Optional<LocationPoint> findTopByStudentIdOrderByRecordedAtDesc(UUID studentId);
 
     List<LocationPoint> findTop50ByStudentIdOrderByRecordedAtDesc(UUID studentId);
+
+    Optional<LocationPoint> findTopByStudentOwnerIdOrderByRecordedAtDesc(UUID ownerId);
+
+    long countByStudentOwnerId(UUID ownerId);
 }
