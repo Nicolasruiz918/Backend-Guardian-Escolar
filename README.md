@@ -6,6 +6,7 @@ Backend monolitico modular para Guardian Escolar.
 
 - Java 21
 - Maven 3.9+
+- PostgreSQL 15+
 
 ## Ejecucion local
 
@@ -38,3 +39,17 @@ mvn clean verify
 ## Variables de entorno
 
 Usar `.env.example` como referencia. No guardar secretos reales en archivos versionados.
+
+```text
+SERVER_PORT=8080
+CORS_ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19006,http://localhost:3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=guardian_escolar
+DB_USERNAME=guardian
+DB_PASSWORD=guardian
+```
+
+## Persistencia
+
+HU-03 deja configurados Spring Data JPA, PostgreSQL y Flyway. Las migraciones de negocio empiezan en las HUs funcionales posteriores.
