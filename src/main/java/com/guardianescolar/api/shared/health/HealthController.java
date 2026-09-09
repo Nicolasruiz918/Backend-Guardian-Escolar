@@ -2,6 +2,7 @@ package com.guardianescolar.api.shared.health;
 
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ public class HealthController {
 
     private final String version;
 
+    @Autowired
     public HealthController(ObjectProvider<BuildProperties> buildProperties) {
         this(buildProperties.getIfAvailable());
     }
