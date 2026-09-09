@@ -24,3 +24,5 @@ guardian:
     codes:
       expiration: 10m
       max-attempts: 5
+  push:
+    enabled: false
