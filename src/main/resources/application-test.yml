@@ -14,3 +14,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+
+guardian:
+  security:
+    jwt:
+      secret: test-secret-with-more-than-32-characters
+      access-expiration: 15m
+      refresh-expiration: 30d
+    codes:
+      expiration: 10m
+      max-attempts: 5
