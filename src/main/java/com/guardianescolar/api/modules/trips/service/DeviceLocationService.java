@@ -11,6 +11,7 @@ import com.guardianescolar.api.modules.trips.dto.StudentDeviceResponse;
 import com.guardianescolar.api.modules.trips.repository.LocationPointRepository;
 import com.guardianescolar.api.modules.trips.repository.StudentDeviceRepository;
 import com.guardianescolar.api.shared.exception.ApiException;
+import com.guardianescolar.api.shared.websocket.RealtimeLocationPublisher;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -27,13 +28,15 @@ public class DeviceLocationService {
     private final StudentDeviceRepository devices;
     private final LocationPointRepository locations;
     private final Clock clock;
+    private final RealtimeLocationPublisher realtimePublisher;
 
     public DeviceLocationService(StudentService studentService, StudentDeviceRepository devices,
-            LocationPointRepository locations, Clock clock) {
+            LocationPointRepository locations, Clock clock, RealtimeLocationPublisher realtimePublisher) {
         this.studentService = studentService;
         this.devices = devices;
         this.locations = locations;
         this.clock = clock;
+        this.realtimePublisher = realtimePublisher;
     }
 
     @Transactional(readOnly = true)
@@ -66,7 +69,9 @@ public class DeviceLocationService {
         }
         LocationPoint point = new LocationPoint(student, device, request.latitude(), request.longitude(), request.accuracy(),
                 request.speed(), request.batteryLevel(), recordedAt);
-        return afterLocationSaved(toLocation(locations.save(point)));
+        LocationResponse response = toLocation(locations.save(point));
+        realtimePublisher.publish(ownerId, response);
+        return afterLocationSaved(response);
     }
 
     @Transactional(readOnly = true)
