@@ -35,6 +35,13 @@ guardian:
     codes:
       expiration: ${SECURITY_CODE_EXPIRATION:10m}
       max-attempts: ${SECURITY_CODE_MAX_ATTEMPTS:5}
+  push:
+    enabled: ${PUSH_ENABLED:false}
+    provider: ${PUSH_PROVIDER:expo}
+    expo-endpoint: ${EXPO_PUSH_ENDPOINT:https://exp.host/--/api/v2/push/send}
+    expo-access-token: ${EXPO_ACCESS_TOKEN:}
+    connect-timeout: ${PUSH_CONNECT_TIMEOUT:3s}
+    request-timeout: ${PUSH_REQUEST_TIMEOUT:5s}
 
 management:
   endpoints:
