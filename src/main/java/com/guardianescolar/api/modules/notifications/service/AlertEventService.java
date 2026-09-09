@@ -9,6 +9,7 @@ import com.guardianescolar.api.modules.notifications.domain.JourneyHistory;
 import com.guardianescolar.api.modules.notifications.repository.GuardianEventRepository;
 import com.guardianescolar.api.modules.notifications.repository.GuardianNotificationRepository;
 import com.guardianescolar.api.modules.notifications.repository.JourneyHistoryRepository;
+import com.guardianescolar.api.modules.push.service.PushNotificationService;
 import com.guardianescolar.api.modules.trips.domain.LocationPoint;
 import com.guardianescolar.api.modules.zones.domain.SafeZone;
 import com.guardianescolar.api.modules.zones.repository.SafeZoneRepository;
@@ -24,13 +25,16 @@ public class AlertEventService {
     private final GuardianEventRepository events;
     private final GuardianNotificationRepository notifications;
     private final JourneyHistoryRepository history;
+    private final PushNotificationService pushNotifications;
 
     public AlertEventService(SafeZoneRepository zones, GuardianEventRepository events,
-            GuardianNotificationRepository notifications, JourneyHistoryRepository history) {
+            GuardianNotificationRepository notifications, JourneyHistoryRepository history,
+            PushNotificationService pushNotifications) {
         this.zones = zones;
         this.events = events;
         this.notifications = notifications;
         this.history = history;
+        this.pushNotifications = pushNotifications;
     }
 
     public void evaluate(LocationPoint location) {
@@ -46,8 +50,10 @@ public class AlertEventService {
         history.save(new JourneyHistory(location.getStudent(), location, event, type.name()));
         if (type == EventType.OUTSIDE_SAFE_ZONE) {
             UserAccount owner = location.getStudent().getOwner();
-            notifications.save(new GuardianNotification(owner, location.getStudent(), event, "Alerta de zona segura",
-                    message, type));
+            GuardianNotification notification = notifications.save(new GuardianNotification(owner, location.getStudent(), event,
+                    "Alerta de zona segura", message, type));
+            pushNotifications.notifyAfterCommit(owner.getId(), notification.getTitle(), notification.getBody(),
+                    notification.getType(), location.getStudent().getId());
         }
     }
 
