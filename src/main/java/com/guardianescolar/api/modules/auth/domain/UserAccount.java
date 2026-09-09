@@ -83,6 +83,11 @@ public class UserAccount extends BaseEntity {
         this.passwordHash = passwordHash;
     }
 
+    public void updateProfile(String fullName, String phone) {
+        this.fullName = fullName;
+        this.phone = phone;
+    }
+
     public void configureTwoFactor(boolean enabled, TwoFactorMethod method) {
         this.twoFactorEnabled = enabled;
         this.twoFactorMethod = method == null ? TwoFactorMethod.EMAIL : method;
