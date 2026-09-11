@@ -1,284 +1,263 @@
 package com.guardianescolar.api.modules.auth.service;
 
-import com.guardianescolar.api.modules.auth.domain.RefreshToken;
-import com.guardianescolar.api.modules.auth.domain.TwoFactorChallenge;
-import com.guardianescolar.api.modules.auth.domain.TwoFactorMethod;
-import com.guardianescolar.api.modules.auth.domain.UserAccount;
-import com.guardianescolar.api.modules.auth.domain.VerificationCode;
-import com.guardianescolar.api.modules.auth.domain.VerificationCodeType;
-import com.guardianescolar.api.modules.auth.dto.AuthResponse;
-import com.guardianescolar.api.modules.auth.dto.ChangePasswordRequest;
-import com.guardianescolar.api.modules.auth.dto.ForgotPasswordRequest;
-import com.guardianescolar.api.modules.auth.dto.ForgotPasswordResponse;
-import com.guardianescolar.api.modules.auth.dto.LoginRequest;
-import com.guardianescolar.api.modules.auth.dto.RegisterRequest;
-import com.guardianescolar.api.modules.auth.dto.ResetPasswordRequest;
-import com.guardianescolar.api.modules.auth.dto.TwoFactorSettingsRequest;
-import com.guardianescolar.api.modules.auth.dto.TwoFactorVerifyRequest;
-import com.guardianescolar.api.modules.auth.dto.UserSessionResponse;
-import com.guardianescolar.api.modules.auth.dto.VerifyPasswordCodeRequest;
-import com.guardianescolar.api.modules.auth.dto.VerifyPasswordCodeResponse;
-import com.guardianescolar.api.modules.auth.repository.RefreshTokenRepository;
-import com.guardianescolar.api.modules.auth.repository.TwoFactorChallengeRepository;
-import com.guardianescolar.api.modules.auth.repository.UserAccountRepository;
-import com.guardianescolar.api.modules.auth.repository.VerificationCodeRepository;
-import com.guardianescolar.api.shared.exception.ApiException;
-import com.guardianescolar.api.shared.security.JwtProperties;
+import com.guardianescolar.api.modules.auth.dto.AuthDtos;
+import com.guardianescolar.api.modules.notifications.domain.NotificationSettings;
+import com.guardianescolar.api.modules.notifications.repository.NotificationSettingsRepository;
+import com.guardianescolar.api.modules.security.domain.User;
+import com.guardianescolar.api.modules.security.repository.UserRepository;
 import com.guardianescolar.api.shared.security.JwtService;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Locale;
+import java.time.OffsetDateTime;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
-    private static final String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,72}$";
+    private static final String TERMS_VERSION = "2026-08-20";
 
-    private final UserAccountRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final VerificationCodeRepository verificationCodeRepository;
-    private final TwoFactorChallengeRepository twoFactorChallengeRepository;
+    private final UserRepository userRepository;
+    private final NotificationSettingsRepository notificationSettingsRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final JwtProperties jwtProperties;
-    private final SecurityCodeProperties codeProperties;
-    private final SecurityCodeGenerator codeGenerator;
-    private final CodeDeliveryService codeDeliveryService;
-    private final TokenHasher tokenHasher;
-    private final Clock clock;
-
-    public AuthService(
-            UserAccountRepository userRepository,
-            RefreshTokenRepository refreshTokenRepository,
-            VerificationCodeRepository verificationCodeRepository,
-            TwoFactorChallengeRepository twoFactorChallengeRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            JwtProperties jwtProperties,
-            SecurityCodeProperties codeProperties,
-            SecurityCodeGenerator codeGenerator,
-            CodeDeliveryService codeDeliveryService,
-            TokenHasher tokenHasher,
-            Clock clock) {
-        this.userRepository = userRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.verificationCodeRepository = verificationCodeRepository;
-        this.twoFactorChallengeRepository = twoFactorChallengeRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.jwtProperties = jwtProperties;
-        this.codeProperties = codeProperties;
-        this.codeGenerator = codeGenerator;
-        this.codeDeliveryService = codeDeliveryService;
-        this.tokenHasher = tokenHasher;
-        this.clock = clock;
-    }
+    private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
+    private final CurrentUserService currentUserService;
+    private final AuthValidationService validationService;
+    private final AuthUserMapper userMapper;
+    private final RoleProvisioningService roleProvisioningService;
+    private final DeviceSessionService deviceSessionService;
+    private final TwoFactorService twoFactorService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        validatePassword(request.password());
-        String email = normalizeEmail(request.email());
+    public AuthDtos.AuthResponse registrar(AuthDtos.RegisterRequest request) {
+        validationService.validatePasswordPolicy(request.password());
+        String email = validationService.normalizeEmail(request.email());
+        validationService.validateRegistrableEmail(email);
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email is already registered");
+            throw new IllegalArgumentException("Ya existe una cuenta registrada con este correo electrónico");
         }
-        UserAccount user = new UserAccount(
-                email,
-                passwordEncoder.encode(request.password()),
-                request.name().trim(),
-                request.phone().trim());
-        userRepository.save(user);
-        return createSession(user);
-    }
 
-    @Transactional
-    public AuthResponse login(LoginRequest request) {
-        UserAccount user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.email()))
-                .orElseThrow(() -> invalidCredentials());
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw invalidCredentials();
+        String phone = validationService.normalizePhone(request.phone());
+        validationService.validatePhoneAvailable(phone);
+        if (!Boolean.TRUE.equals(request.termsAccepted())) {
+            throw new IllegalArgumentException("Debe aceptar los términos y condiciones");
         }
-        if (user.isTwoFactorEnabled()) {
-            String code = codeGenerator.sixDigitCode();
-            TwoFactorChallenge challenge = new TwoFactorChallenge(
-                    user,
-                    user.getTwoFactorMethod(),
-                    tokenHasher.hash(code),
-                    clock.instant().plus(codeProperties.expiration()),
-                    codeProperties.maxAttempts());
-            twoFactorChallengeRepository.save(challenge);
-            codeDeliveryService.deliver(deliveryContact(user, user.getTwoFactorMethod()), user.getTwoFactorMethod(), code);
-            return new AuthResponse(null, null, null, null, true, challenge.getId(),
-                    user.getTwoFactorMethod().name().toLowerCase(Locale.ROOT), user.getEmail());
-        }
-        return createSession(user);
-    }
 
-    @Transactional(noRollbackFor = ApiException.class)
-    public AuthResponse verifyTwoFactor(TwoFactorVerifyRequest request) {
-        TwoFactorChallenge challenge = twoFactorChallengeRepository.findById(request.challengeId())
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid two factor challenge"));
-        Instant now = clock.instant();
-        if (!challenge.canVerify(now)) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Two factor challenge expired or locked");
-        }
-        challenge.registerAttempt();
-        if (!tokenHasher.hash(request.code()).equals(challenge.getCodeHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid verification code");
-        }
-        challenge.markUsed(now);
-        return createSession(challenge.getUser());
-    }
+        User user = new User();
+        user.setFullName(request.fullName().trim());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setIsActive(false);
+        user.setEmailVerified(false);
+        user.setEmailVerificationToken(generateToken());
+        user.setEmailVerificationExpiresAt(OffsetDateTime.now().plusHours(24));
+        user.setTermsAccepted(true);
+        user.setTermsAcceptedAt(OffsetDateTime.now());
+        user.setTermsVersion(normalizeTermsVersion(request.termsVersion()));
+        user.getRoles().add(roleProvisioningService.parentRole());
+        user = userRepository.save(user);
 
-    @Transactional
-    public AuthResponse refresh(String refreshToken) {
-        RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHasher.hash(refreshToken))
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
-        if (!token.isActive(clock.instant())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
-        }
-        token.revoke(clock.instant());
-        return createSession(token.getUser());
-    }
+        NotificationSettings settings = new NotificationSettings();
+        settings.setUser(user);
+        notificationSettingsRepository.save(settings);
 
-    @Transactional
-    public void logout(String refreshToken) {
-        refreshTokenRepository.findByTokenHash(tokenHasher.hash(refreshToken))
-                .ifPresent(token -> token.revoke(clock.instant()));
-    }
-
-    @Transactional
-    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
-        String method = normalizeMethod(request.method()).name().toLowerCase(Locale.ROOT);
-        String contact = request.contact().trim();
-        UserAccount user = findByContact(method, contact);
-        String code = codeGenerator.sixDigitCode();
-        VerificationCode verificationCode = new VerificationCode(
-                user,
-                VerificationCodeType.PASSWORD_RESET,
-                contact,
-                tokenHasher.hash(code),
-                clock.instant().plus(codeProperties.expiration()),
-                codeProperties.maxAttempts());
-        verificationCodeRepository.save(verificationCode);
-        codeDeliveryService.deliver(contact, normalizeMethod(method), code);
-        return new ForgotPasswordResponse(verificationCode.getId(), method, contact,
-                (int) codeProperties.expiration().toMinutes());
-    }
-
-    @Transactional(noRollbackFor = ApiException.class)
-    public VerifyPasswordCodeResponse verifyPasswordCode(VerifyPasswordCodeRequest request) {
-        VerificationCode code = verificationCodeRepository
-                .findByIdAndType(request.resetId(), VerificationCodeType.PASSWORD_RESET)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid verification code"));
-        Instant now = clock.instant();
-        if (!code.canVerify(now)) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Verification code expired or locked");
-        }
-        code.registerAttempt();
-        if (!tokenHasher.hash(request.code()).equals(code.getCodeHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid verification code");
-        }
-        String resetToken = codeGenerator.opaqueToken();
-        code.markUsed(tokenHasher.hash(resetToken), now.plus(codeProperties.expiration()), now);
-        return new VerifyPasswordCodeResponse(resetToken);
-    }
-
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        validatePassword(request.newPassword());
-        VerificationCode code = verificationCodeRepository.findByResetTokenHash(tokenHasher.hash(request.resetToken()))
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid reset token"));
-        if (!code.canReset(clock.instant())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid reset token");
-        }
-        UserAccount user = code.getUser();
-        user.changePassword(passwordEncoder.encode(request.newPassword()));
-        refreshTokenRepository.revokeActiveByUser(user, clock.instant());
-    }
-
-    @Transactional
-    public void changePassword(UUID userId, ChangePasswordRequest request) {
-        validatePassword(request.newPassword());
-        UserAccount user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "Current password is incorrect");
-        }
-        user.changePassword(passwordEncoder.encode(request.newPassword()));
-        refreshTokenRepository.revokeActiveByUser(user, clock.instant());
-    }
-
-    @Transactional
-    public UserSessionResponse configureTwoFactor(UUID userId, TwoFactorSettingsRequest request) {
-        UserAccount user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
-        user.configureTwoFactor(request.enabled(), normalizeMethod(request.method() == null ? "email" : request.method()));
-        return toUser(user);
-    }
-
-    private AuthResponse createSession(UserAccount user) {
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = codeGenerator.opaqueToken();
-        RefreshToken token = new RefreshToken(
-                user,
-                tokenHasher.hash(refreshToken),
-                clock.instant().plus(jwtProperties.refreshExpiration()));
-        refreshTokenRepository.save(token);
-        return new AuthResponse(accessToken, accessToken, refreshToken, toUser(user), false, null, null, user.getEmail());
-    }
-
-    private UserSessionResponse toUser(UserAccount user) {
-        return new UserSessionResponse(
-                user.getId(),
+        emailService.enviarVerificacionEmail(
                 user.getEmail(),
-                user.getFullName(),
-                user.getPhone(),
-                user.getRole().name(),
-                user.isTwoFactorEnabled(),
-                user.getTwoFactorMethod().name().toLowerCase(Locale.ROOT));
+                user.getEmailVerificationToken(),
+                validationService.normalizeReturnUrl(request.returnUrl()));
+        return authResponse("", 0, userMapper.toUserResponse(user), false, null, null);
     }
 
-    private UserAccount findByContact(String method, String contact) {
-        if ("email".equals(method)) {
-            return userRepository.findByEmailIgnoreCase(contact)
-                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    public AuthDtos.AuthResponse login(AuthDtos.LoginRequest request) {
+        String email = validationService.normalizeEmail(request.email());
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalArgumentException("Credenciales inválidas"));
+        validateLoginUser(user);
+
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
+        deviceSessionService.validateDeviceLogin(user, request);
+
+        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            twoFactorService.prepareAndSend(user, user.getTwoFactorMethod());
+            return authResponse("", 0, userMapper.toUserResponse(user), true, user.getTwoFactorToken(), user.getTwoFactorMethod());
         }
-        return userRepository.findAll()
-                .stream()
-                .filter(user -> contact.equals(user.getPhone()))
-                .findFirst()
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String token = jwtService.generateToken(user);
+        deviceSessionService.saveSession(user, token, request);
+        return authResponse(token, jwtService.getExpirationMinutes(), userMapper.toUserResponse(user), false, null, null);
     }
 
-    private String deliveryContact(UserAccount user, TwoFactorMethod method) {
-        return method == TwoFactorMethod.SMS ? user.getPhone() : user.getEmail();
+    @Transactional
+    public AuthDtos.MessageResponse verificarEmail(String token) {
+        User user = userRepository.findByEmailVerificationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Token de verificación inválido"));
+        validateEmailVerificationToken(user);
+
+        user.setEmailVerified(true);
+        user.setIsActive(true);
+        user.setEmailVerificationToken(null);
+        user.setEmailVerificationExpiresAt(null);
+        userRepository.save(user);
+        return new AuthDtos.MessageResponse("Email verificado correctamente");
     }
 
-    private TwoFactorMethod normalizeMethod(String method) {
-        return switch (method.trim().toLowerCase(Locale.ROOT)) {
-            case "sms", "phone" -> TwoFactorMethod.SMS;
-            case "email" -> TwoFactorMethod.EMAIL;
-            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "Unsupported verification method");
-        };
+    @Transactional
+    public AuthDtos.MessageResponse confirmarInicioSesion(String token) {
+        return deviceSessionService.confirmLogin(token);
     }
 
-    private String normalizeEmail(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
+    @Transactional
+    public AuthDtos.MessageResponse solicitarRestablecimiento(AuthDtos.PasswordRecoveryRequest request) {
+        userRepository.findByEmailIgnoreCase(validationService.normalizeEmail(request.email()))
+                .filter(User::getIsActive)
+                .ifPresent(user -> {
+                    user.setPasswordResetToken(generateToken());
+                    user.setPasswordResetExpiresAt(OffsetDateTime.now().plusMinutes(30));
+                    userRepository.save(user);
+                    emailService.enviarRestablecimientoPassword(user.getEmail(), user.getPasswordResetToken());
+                });
+        return new AuthDtos.MessageResponse("Si el email existe, recibirá instrucciones para restablecer la contraseña");
     }
 
-    private void validatePassword(String password) {
-        if (password == null || !password.matches(PASSWORD_PATTERN)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST,
-                    "Password must include uppercase, lowercase, number and special character");
+    @Transactional
+    public AuthDtos.MessageResponse restablecerPassword(AuthDtos.ResetPasswordRequest request) {
+        validationService.validatePasswordPolicy(request.newPassword());
+        User user = userRepository.findByPasswordResetToken(request.token())
+                .orElseThrow(() -> new IllegalArgumentException("Token de restablecimiento inválido"));
+        validatePasswordResetToken(user);
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetExpiresAt(null);
+        userRepository.save(user);
+        return new AuthDtos.MessageResponse("Contraseña actualizada correctamente");
+    }
+
+    @Transactional
+    public AuthDtos.UserResponse actualizarPerfil(AuthDtos.UpdateProfileRequest request) {
+        User user = currentUserService.currentUser();
+        user.setFullName(request.fullName().trim());
+        user.setPhone(validationService.normalizeOptionalText(request.phone()));
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public AuthDtos.UserResponse cambiarEmail(AuthDtos.ChangeEmailRequest request) {
+        User user = currentUserService.currentUser();
+        validationService.validateCurrentPassword(user, request.currentPassword());
+        String newEmail = validationService.normalizeEmail(request.newEmail());
+        validationService.validateRegistrableEmail(newEmail);
+        boolean changedEmail = !user.getEmail().equalsIgnoreCase(newEmail);
+        if (changedEmail && userRepository.existsByEmailIgnoreCase(newEmail)) {
+            throw new IllegalArgumentException("Ya existe una cuenta registrada con este correo electrónico");
+        }
+        if (!changedEmail) {
+            return userMapper.toUserResponse(user);
+        }
+
+        user.setEmail(newEmail);
+        user.setEmailVerified(false);
+        user.setEmailVerificationToken(generateToken());
+        user.setEmailVerificationExpiresAt(OffsetDateTime.now().plusHours(24));
+        User saved = userRepository.save(user);
+        emailService.enviarVerificacionEmail(saved.getEmail(), saved.getEmailVerificationToken(), null);
+        return userMapper.toUserResponse(saved);
+    }
+
+    @Transactional
+    public AuthDtos.MessageResponse cambiarPassword(AuthDtos.ChangePasswordRequest request) {
+        validationService.validatePasswordPolicy(request.newPassword());
+        User user = currentUserService.currentUser();
+        validationService.validateCurrentPassword(user, request.currentPassword());
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        return new AuthDtos.MessageResponse("Contraseña actualizada correctamente");
+    }
+
+    @Transactional
+    public AuthDtos.TwoFactorChallengeResponse solicitarDosFactores(AuthDtos.RequestTwoFactorRequest request) {
+        return twoFactorService.request(currentUserService.currentUser(), request.method());
+    }
+
+    @Transactional
+    public AuthDtos.TwoFactorChallengeResponse reenviarDosFactores(AuthDtos.ResendTwoFactorRequest request) {
+        return twoFactorService.resend(request);
+    }
+
+    @Transactional
+    public AuthDtos.AuthResponse verificarDosFactores(AuthDtos.VerifyTwoFactorRequest request) {
+        User user = twoFactorService.verify(request);
+        String token = jwtService.generateToken(user);
+        deviceSessionService.saveSession(user, token, new AuthDtos.LoginRequest(user.getEmail(), "", null, null, null, null));
+        return authResponse(token, jwtService.getExpirationMinutes(), userMapper.toUserResponse(user), false, null, null);
+    }
+
+    @Transactional
+    public AuthDtos.UserResponse desactivarDosFactores(AuthDtos.DisableTwoFactorRequest request) {
+        User user = currentUserService.currentUser();
+        validationService.validateCurrentPassword(user, request.currentPassword());
+        return userMapper.toUserResponse(twoFactorService.disable(user));
+    }
+
+    public AuthDtos.UserResponse toUserResponse(User user) {
+        return userMapper.toUserResponse(user);
+    }
+
+    private void validateLoginUser(User user) {
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new IllegalArgumentException("Debes verificar tu email electrónico antes de iniciar sesión");
+        }
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new IllegalArgumentException("Credenciales inválidas");
         }
     }
 
-    private ApiException invalidCredentials() {
-        return new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+    private void validateEmailVerificationToken(User user) {
+        if (user.getEmailVerificationExpiresAt() == null
+                || user.getEmailVerificationExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new IllegalArgumentException("Token de verificación expirado");
+        }
+    }
+
+    private void validatePasswordResetToken(User user) {
+        if (user.getPasswordResetExpiresAt() == null
+                || user.getPasswordResetExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new IllegalArgumentException("Token de restablecimiento expirado");
+        }
+    }
+
+    private String normalizeTermsVersion(String termsVersion) {
+        if (termsVersion == null || termsVersion.isBlank()) {
+            return TERMS_VERSION;
+        }
+        return termsVersion.trim();
+    }
+
+    private String generateToken() {
+        return UUID.randomUUID().toString();
+    }
+
+    private AuthDtos.AuthResponse authResponse(
+            String token,
+            long expiresInMinutes,
+            AuthDtos.UserResponse user,
+            boolean requiresTwoFactor,
+            String twoFactorToken,
+            String twoFactorMethod) {
+        return new AuthDtos.AuthResponse(
+                token,
+                expiresInMinutes,
+                user,
+                requiresTwoFactor,
+                twoFactorToken,
+                twoFactorMethod);
     }
 }
