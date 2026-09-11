@@ -1,8 +1,9 @@
 target/
-.mvn/wrapper/maven-wrapper.jar
-*.class
-*.log
-
 .env
-.env.*
+*.env
 !.env.example
+*.log
+hs_err_pid*.log
+.idea/
+.vscode/
+.github/modernize/
