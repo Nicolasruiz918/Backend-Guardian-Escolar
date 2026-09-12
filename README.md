@@ -1,30 +1,28 @@
-# HU-03 - Gestion De Estudiantes
+# HU-04 - Rutas Escolares
 
 ## Objetivo
 
-Permitir al acudiente administrar estudiantes, contactos de emergencia, acudientes asociados y dispositivos vinculados.
+Implementar la gestion y consulta de rutas escolares, paradas y asignaciones de estudiantes a rutas.
 
 ## Cambios agregados
 
-- Modulo `students` con entidades, DTOs, repositorios, controladores y servicios.
-- Registro, consulta, actualizacion y eliminacion logica de estudiantes.
-- Gestion de contactos de emergencia.
-- Vinculacion de acudientes por codigo.
-- Vinculacion de dispositivos del estudiante.
-- Servicios auxiliares para acceso, mapeo y reglas de negocio.
+- Modulo `routes` con entidades, DTOs, repositorios, controlador y servicios.
+- Consulta de rutas disponibles.
+- Administracion de paradas.
+- Asignacion de estudiantes a rutas.
+- Validaciones de acceso segun usuario autenticado.
+- Separacion de responsabilidades mediante mapper, validaciones y control de acceso.
 
 ## Endpoints principales
 
-- `GET /api/students`
-- `POST /api/students`
-- `PUT /api/students/{id}`
-- `DELETE /api/students/{id}`
-- `POST /api/students/link-code`
-- `POST /api/students/link-device`
-- `GET /api/emergency-contacts`
+- `GET /api/routes`
+- `GET /api/routes/{id}`
+- `POST /api/routes`
+- `PUT /api/routes/{id}`
+- `DELETE /api/routes/{id}`
 
 ## Commit sugerido
 
 ```bash
-git commit -m "feat(HU-03): manage students guardians and emergency contacts"
+git commit -m "feat(HU-04): manage school routes and stops"
 ```
