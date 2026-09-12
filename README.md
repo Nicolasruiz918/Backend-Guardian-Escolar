@@ -1,28 +1,23 @@
-# HU-15 - Rutas Escolares
+# HU-05 - Trayectos GPS
 
 ## Objetivo
 
-Implementar la gestion y consulta de rutas escolares, paradas y asignaciones de estudiantes a rutas.
+Implementar el seguimiento de trayectos escolares, registro de coordenadas y control del estado del recorrido.
 
 ## Cambios agregados
 
-- Modulo `routes` con entidades, DTOs, repositorios, controlador y servicios.
-- Consulta de rutas disponibles.
-- Administracion de paradas.
-- Asignacion de estudiantes a rutas.
-- Validaciones de acceso segun usuario autenticado.
-- Separacion de responsabilidades mediante mapper, validaciones y control de acceso.
+- Modulo `trips` con entidades, DTOs, repositorios, controlador y servicios.
+- Creacion y consulta de trayectos.
+- Registro de coordenadas GPS.
+- Actualizacion del estado del trayecto.
+- Calculo de distancia y desviacion mediante `GeoMathService`.
+- Generacion de alertas operativas mediante `TripAlertService`.
+- Pruebas automatizadas de calculo geografico.
 
 ## Endpoints principales
 
-- `GET /api/routes`
-- `GET /api/routes/{id}`
-- `POST /api/routes`
-- `PUT /api/routes/{id}`
-- `DELETE /api/routes/{id}`
-
-## Commit sugerido
-
-```bash
-git commit -m "feat(HU-04): manage school routes and stops"
-```
+- `GET /api/trips`
+- `POST /api/trips`
+- `PATCH /api/trips/{tripId}/status`
+- `GET /api/trips/{tripId}/coordinates`
+- `POST /api/trips/{tripId}/coordinates`
