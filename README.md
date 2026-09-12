@@ -1,28 +1,19 @@
-# HU-16 - Trayectos GPS
+# HU-17 - Zonas Seguras
 
 ## Objetivo
 
-Implementar el seguimiento de trayectos escolares, registro de coordenadas y control del estado del recorrido.
+Permitir la administracion de zonas seguras asociadas a estudiantes para apoyar el monitoreo de ubicaciones relevantes.
 
 ## Cambios agregados
 
-- Modulo `trips` con entidades, DTOs, repositorios, controlador y servicios.
-- Creacion y consulta de trayectos.
-- Registro de coordenadas GPS.
-- Actualizacion del estado del trayecto.
-- Calculo de distancia y desviacion mediante `GeoMathService`.
-- Generacion de alertas operativas mediante `TripAlertService`.
-- Pruebas automatizadas de calculo geografico.
+- Modulo `zones` con entidad, DTOs, repositorio, controlador y servicio.
+- Creacion, consulta, actualizacion y eliminacion logica de zonas seguras.
+- Validaciones de acceso sobre estudiantes asociados al usuario autenticado.
+- Preparacion para alertas relacionadas con entrada o salida de zonas.
 
 ## Endpoints principales
 
-- `GET /api/trips`
-- `POST /api/trips`
-- `PATCH /api/trips/{tripId}/status`
-- `GET /api/trips/{tripId}/coordinates`
-- `POST /api/trips/{tripId}/coordinates`
-
-
-```bash
-git commit -m "feat(HU-05): register and track gps trips"
-```
+- `GET /api/safe-zones`
+- `POST /api/safe-zones`
+- `PUT /api/safe-zones/{id}`
+- `DELETE /api/safe-zones/{id}`
