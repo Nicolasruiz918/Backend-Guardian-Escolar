@@ -1,19 +1,37 @@
-# HU-17 - Zonas Seguras
+# HU-18 - Backend Implementado
 
 ## Objetivo
 
-Permitir la administracion de zonas seguras asociadas a estudiantes para apoyar el monitoreo de ubicaciones relevantes.
+Consolidar el backend completo de GPS Guardian Escolar con todos los modulos implementados, configuracion productiva, pruebas basicas y soporte de despliegue.
 
 ## Cambios agregados
 
-- Modulo `zones` con entidad, DTOs, repositorio, controlador y servicio.
-- Creacion, consulta, actualizacion y eliminacion logica de zonas seguras.
-- Validaciones de acceso sobre estudiantes asociados al usuario autenticado.
-- Preparacion para alertas relacionadas con entrada o salida de zonas.
+Esta HU representa el estado final implementado del backend, incluyendo:
 
-## Endpoints principales
+- Autenticacion, JWT, verificacion de correo y doble factor.
+- Gestion de usuarios, roles, permisos y sesiones.
+- Gestion de estudiantes, acudientes, contactos y dispositivos.
+- Rutas escolares y paradas.
+- Trayectos GPS y coordenadas.
+- Zonas seguras.
+- Notificaciones, Expo Push y SMS configurable.
+- Panel administrativo.
+- Auditoria y registro de errores.
+- Configuracion Spring Boot por perfiles.
+- Dockerfile y docker-compose standalone.
+- `.env.example` sin secretos reales.
+- Pruebas automatizadas existentes.
 
-- `GET /api/safe-zones`
-- `POST /api/safe-zones`
-- `PUT /api/safe-zones/{id}`
-- `DELETE /api/safe-zones/{id}`
+## Validacion esperada
+
+```bash
+./mvnw test
+```
+
+Resultado esperado:
+
+```text
+Tests run: 3
+Failures: 0
+BUILD SUCCESS
+```

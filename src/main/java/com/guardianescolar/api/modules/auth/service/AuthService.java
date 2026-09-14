@@ -35,7 +35,7 @@ public class AuthService {
     private final TwoFactorService twoFactorService;
 
     @Transactional
-    public AuthDtos.AuthResponse registrar(AuthDtos.RegisterRequest request) {
+    public AuthDtos.AuthResponse register(AuthDtos.RegisterRequest request) {
         validationService.validatePasswordPolicy(request.password());
         String email = validationService.normalizeEmail(request.email());
         validationService.validateRegistrableEmail(email);

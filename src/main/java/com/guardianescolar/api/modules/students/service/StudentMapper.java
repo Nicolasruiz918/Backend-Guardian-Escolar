@@ -1,11 +1,10 @@
 package com.guardianescolar.api.modules.students.service;
 
-import com.guardianescolar.api.modules.routes.domain.Route;
-import com.guardianescolar.api.modules.routes.domain.Stop;
 import com.guardianescolar.api.modules.routes.domain.StudentRoute;
 import com.guardianescolar.api.modules.routes.dto.RouteDtos;
 import com.guardianescolar.api.modules.routes.repository.StopRepository;
 import com.guardianescolar.api.modules.routes.repository.StudentRouteRepository;
+import com.guardianescolar.api.modules.routes.service.RouteMapper;
 import com.guardianescolar.api.modules.security.domain.User;
 import com.guardianescolar.api.modules.students.domain.Student;
 import com.guardianescolar.api.modules.students.domain.StudentDevice;
@@ -22,10 +21,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudentMapper {
 
+    private static final String STATUS_ACTIVE = "ACTIVE";
+
     private final StudentRouteRepository studentRouteRepository;
     private final StopRepository stopRepository;
     private final StudentDeviceRepository studentDeviceRepository;
     private final StudentGuardianRepository studentGuardianRepository;
+    private final RouteMapper routeMapper;
 
     public StudentDtos.StudentResponse toResponse(Student student) {
         return new StudentDtos.StudentResponse(
@@ -38,7 +40,7 @@ public class StudentMapper {
                 student.getBirthDate(),
                 student.getIsActive(),
                 studentDeviceRepository.countByStudentIdAndIsActiveTrueAndDeletedAtIsNull(student.getId()),
-                1 + studentGuardianRepository.countByStudentIdAndStatusAndDeletedAtIsNull(student.getId(), "ACTIVE"),
+                1 + studentGuardianRepository.countByStudentIdAndStatusAndDeletedAtIsNull(student.getId(), STATUS_ACTIVE),
                 assignedRoutes(student.getId()));
     }
 
@@ -72,28 +74,7 @@ public class StudentMapper {
         return studentRouteRepository.findByIdStudentIdAndIsActiveTrue(studentId).stream()
                 .map(StudentRoute::getRoute)
                 .filter(route -> route.getDeletedAt() == null)
-                .map(route -> toRouteResponse(route, stopRepository.findByRouteIdOrderByStopOrderAsc(route.getId())))
+                .map(route -> routeMapper.toResponse(route, stopRepository.findByRouteIdOrderByStopOrderAsc(route.getId())))
                 .toList();
-    }
-
-    private RouteDtos.RouteResponse toRouteResponse(Route route, List<Stop> stops) {
-        return new RouteDtos.RouteResponse(
-                route.getId(),
-                route.getRouteName(),
-                route.getDescription(),
-                route.getOriginLatitude(),
-                route.getOriginLongitude(),
-                route.getDestinationLatitude(),
-                route.getDestinationLongitude(),
-                stops.stream().map(this::toStopResponse).toList());
-    }
-
-    private RouteDtos.StopResponse toStopResponse(Stop stop) {
-        return new RouteDtos.StopResponse(
-                stop.getId(),
-                stop.getStopOrder(),
-                stop.getStopName(),
-                stop.getLatitude(),
-                stop.getLongitude());
     }
 }

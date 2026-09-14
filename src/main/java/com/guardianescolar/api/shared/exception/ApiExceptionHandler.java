@@ -20,23 +20,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RequiredArgsConstructor
 public class ApiExceptionHandler {
 
-    private final ErrorLogService ErrorLogService;
+    private final ErrorLogService errorLogService;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         return build(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiError> handleBadRequest(RuntimeException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         return build(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .toList();
@@ -49,25 +49,25 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         return build(HttpStatus.CONFLICT, "La operación viola una restricción de datos");
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthentication(AuthenticationException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         return build(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
-        return build(HttpStatus.FORBIDDEN, "No tienes Permissions para ejecutar esta acción");
+        errorLogService.register(exception, request);
+        return build(HttpStatus.FORBIDDEN, "No tienes permisos para ejecutar esta acción");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception, HttpServletRequest request) {
-        ErrorLogService.registrar(exception, request);
+        errorLogService.register(exception, request);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
     }
 
