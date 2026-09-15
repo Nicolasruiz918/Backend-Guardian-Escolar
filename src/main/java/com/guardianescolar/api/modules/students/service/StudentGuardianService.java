@@ -9,6 +9,7 @@ import com.guardianescolar.api.modules.students.repository.StudentGuardianReposi
 import com.guardianescolar.api.shared.exception.ResourceNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
