@@ -1,5 +1,6 @@
 package com.guardianescolar.api.modules.auth.service;
 
+import com.guardianescolar.api.modules.security.domain.TwoFactorMethods;
 import com.guardianescolar.api.modules.security.domain.User;
 import com.guardianescolar.api.modules.security.repository.UserRepository;
 import java.util.Hashtable;
@@ -99,13 +100,13 @@ public class AuthValidationService {
 
     public String normalizeTwoFactorMethod(String method) {
         if (method == null || method.isBlank()) {
-            return "EMAIL";
+            return TwoFactorMethods.EMAIL;
         }
         return method.trim().toUpperCase();
     }
 
     public void validateTwoFactorMethodAvailable(User user, String method) {
-        if ("SMS".equalsIgnoreCase(method) && normalizeOptionalText(user.getPhone()) == null) {
+        if (TwoFactorMethods.SMS.equalsIgnoreCase(method) && normalizeOptionalText(user.getPhone()) == null) {
             throw new IllegalArgumentException("Debes registrar un teléfono para activar 2FA por SMS");
         }
     }
@@ -147,3 +148,4 @@ public class AuthValidationService {
         return value == null ? "" : value.replaceAll("\\D", "");
     }
 }
+
