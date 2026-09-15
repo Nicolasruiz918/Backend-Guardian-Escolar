@@ -1,37 +1,21 @@
-# HU-18 - Backend Implementado
+# HU-19- Administracion Y Auditoria
 
 ## Objetivo
 
-Consolidar el backend completo de GPS Guardian Escolar con todos los modulos implementados, configuracion productiva, pruebas basicas y soporte de despliegue.
+Implementar el soporte administrativo para monitorear usuarios, estudiantes, trayectos activos, alertas, auditorias y errores del sistema.
 
 ## Cambios agregados
 
-Esta HU representa el estado final implementado del backend, incluyendo:
+- Modulo `admin` con controlador, DTOs y servicio.
+- Modulo `audit` con entidades, repositorios y servicios para auditoria y errores.
+- Interceptor de auditoria HTTP.
+- Handler global de excepciones con registro de errores.
+- Endpoints administrativos protegidos por rol `ADMIN`.
+- DTOs alineados con el frontend administrativo.
 
-- Autenticacion, JWT, verificacion de correo y doble factor.
-- Gestion de usuarios, roles, permisos y sesiones.
-- Gestion de estudiantes, acudientes, contactos y dispositivos.
-- Rutas escolares y paradas.
-- Trayectos GPS y coordenadas.
-- Zonas seguras.
-- Notificaciones, Expo Push y SMS configurable.
-- Panel administrativo.
-- Auditoria y registro de errores.
-- Configuracion Spring Boot por perfiles.
-- Dockerfile y docker-compose standalone.
-- `.env.example` sin secretos reales.
-- Pruebas automatizadas existentes.
+## Endpoints principales
 
-## Validacion esperada
-
-```bash
-./mvnw test
-```
-
-Resultado esperado:
-
-```text
-Tests run: 3
-Failures: 0
-BUILD SUCCESS
-```
+- `GET /api/admin/dashboard`
+- `GET /api/admin/alerts`
+- `GET /api/admin/audit`
+- `GET /api/admin/errors`
