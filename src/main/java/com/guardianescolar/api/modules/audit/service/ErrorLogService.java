@@ -29,23 +29,23 @@ public class ErrorLogService {
     private final ErrorLogRepository errorLogRepository;
     private final UserRepository userRepository;
 
-    public void registrar(Throwable exception, HttpServletRequest request) {
+    public void register(Throwable exception, HttpServletRequest request) {
         try {
-            ErrorLog registro = new ErrorLog();
-            registro.setUser(UserActual().orElse(null));
-            registro.setTipoError(truncate(exception.getClass().getSimpleName(), 100));
-            registro.setDescription(truncate(exception.getMessage(), 4000));
-            registro.setTrazaError(truncate(stackTrace(exception), 4000));
-            registro.setIpOrigen(parsearIp(request == null ? null : request.getRemoteAddr()));
-            registro.setMetadatos(request == null ? "{}" : "{\"method\":\"" + escape(request.getMethod())
+            ErrorLog errorLog = new ErrorLog();
+            errorLog.setUser(currentUser().orElse(null));
+            errorLog.setTipoError(truncate(exception.getClass().getSimpleName(), 100));
+            errorLog.setDescription(truncate(exception.getMessage(), 4000));
+            errorLog.setTrazaError(truncate(stackTrace(exception), 4000));
+            errorLog.setIpOrigen(parseIp(request == null ? null : request.getRemoteAddr()));
+            errorLog.setMetadatos(request == null ? "{}" : "{\"method\":\"" + escape(request.getMethod())
                     + "\",\"Route\":\"" + escape(request.getRequestURI()) + "\"}");
-            errorLogRepository.save(registro);
+            errorLogRepository.save(errorLog);
         } catch (RuntimeException loggingException) {
             LOGGER.warn("No se pudo registrar error", loggingException);
         }
     }
 
-    private Optional<User> UserActual() {
+    private Optional<User> currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
@@ -67,7 +67,7 @@ public class ErrorLogService {
         return value.substring(0, maxLength);
     }
 
-    private InetAddress parsearIp(String ip) {
+    private InetAddress parseIp(String ip) {
         if (ip == null || ip.isBlank()) {
             return null;
         }

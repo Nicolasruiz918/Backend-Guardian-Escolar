@@ -22,7 +22,7 @@ public class UserDeviceService {
     private final CurrentUserService currentUserService;
 
     @Transactional
-    public NotificationDtos.DeviceResponse registrar(NotificationDtos.DeviceRequest request) {
+    public NotificationDtos.DeviceResponse register(NotificationDtos.DeviceRequest request) {
         User actual = currentUserService.currentUser();
         UserDevice dispositivo = userDeviceRepository.findByExpoPushToken(request.expoPushToken())
                 .orElseGet(UserDevice::new);

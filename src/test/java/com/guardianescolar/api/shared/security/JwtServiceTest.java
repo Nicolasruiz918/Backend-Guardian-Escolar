@@ -12,15 +12,15 @@ class JwtServiceTest {
     @Test
     void generateTokenShouldSupportSecretsThatAreNotBase64Encoded() {
         JwtService jwtService = new JwtService(
-                "guardian-escolar-desarRolelo-cambiar-por-secreto-de-32-bytes-minimo",
+                "guardian-escolar-desarrollo-cambiar-por-secreto-de-32-bytes-minimo",
                 30L);
 
-        User User = new User();
-        User.setId(UUID.randomUUID());
-        User.setEmail("demo@guardian.com");
-        User.setFullName("User Demo");
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("demo@guardian.com");
+        user.setFullName("User Demo");
 
-        String token = assertDoesNotThrow(() -> jwtService.generateToken(User));
+        String token = assertDoesNotThrow(() -> jwtService.generateToken(user));
 
         assertFalse(token.isBlank());
     }

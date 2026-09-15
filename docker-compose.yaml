@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gps_guardian_escolar_api_standalone
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: 8080
+      DB_URL: ${BACKEND_CONTAINER_DB_URL:-jdbc:postgresql://host.docker.internal:5432/gps_guardian_escolar}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-30}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:19006,http://localhost:8081,http://localhost:5173}
+      APP_MAIL_ENABLED: ${APP_MAIL_ENABLED:-false}
+      APP_MAIL_FROM: ${APP_MAIL_FROM:-no-reply@guardianescolar.local}
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:8081}
+      API_PUBLIC_BASE_URL: ${API_PUBLIC_BASE_URL:-http://localhost:8080}
+      GPS_DESVIO_UMBRAL_METROS: ${GPS_DESVIO_UMBRAL_METROS:-150}
+      EXPO_PUSH_ENABLED: ${EXPO_PUSH_ENABLED:-false}
+      EXPO_PUSH_URL: ${EXPO_PUSH_URL:-https://exp.host/--/api/v2/push/send}
+      SMS_ENABLED: ${SMS_ENABLED:-false}
+      SMS_PROVIDER: ${SMS_PROVIDER:-GENERIC}
+      SMS_PROVIDER_URL: ${SMS_PROVIDER_URL:-}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_FROM: ${SMS_FROM:-GuardianEscolar}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailLinkService {
 
-    @Value("${guardian.mail.frontend-base-url:http://localhost:3000}")
+    @Value("${guardian.mail.frontend-base-url:http://localhost:8081}")
     private String frontendBaseUrl;
 
     public String emailVerificationUrl(String token, String returnUrl) {

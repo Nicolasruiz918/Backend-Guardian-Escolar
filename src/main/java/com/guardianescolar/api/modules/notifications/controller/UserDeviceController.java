@@ -30,9 +30,9 @@ public class UserDeviceController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public NotificationDtos.DeviceResponse registrar(
+    public NotificationDtos.DeviceResponse register(
             @Valid @RequestBody NotificationDtos.DeviceRequest request) {
-        return userDeviceService.registrar(request);
+        return userDeviceService.register(request);
     }
 
     @DeleteMapping("/{dispositivoId}")
