@@ -1,26 +1,21 @@
-# HU-18- Notificaciones
+# HU-19-Administracion Y Auditoria
 
 ## Objetivo
 
-Implementar la gestion de notificaciones, configuraciones de aviso y dispositivos del usuario para recibir alertas del sistema.
+Implementar el soporte administrativo para monitorear usuarios, estudiantes, trayectos activos, alertas, auditorias y errores del sistema.
 
 ## Cambios agregados
 
-- Modulo `notifications` con controlador, DTOs, entidades, repositorios y servicios.
-- Consulta de notificaciones recibidas.
-- Marcado de notificaciones como leidas.
-- Configuracion de preferencias de notificacion.
-- Registro y desactivacion de dispositivos de usuario.
-- Integracion base con Expo Push.
-- Integracion configurable con SMS.
-- Separacion de responsabilidades en mapper y servicio de entrega.
+- Modulo `admin` con controlador, DTOs y servicio.
+- Modulo `audit` con entidades, repositorios y servicios para auditoria y errores.
+- Interceptor de auditoria HTTP.
+- Handler global de excepciones con registro de errores.
+- Endpoints administrativos protegidos por rol `ADMIN`.
+- DTOs alineados con el frontend administrativo.
 
 ## Endpoints principales
 
-- `GET /api/notifications`
-- `PATCH /api/notifications/{id}/read`
-- `GET /api/notifications/settings`
-- `PUT /api/notifications/settings`
-- `POST /api/devices`
-- `GET /api/devices`
-- `DELETE /api/devices/{id}`
+- `GET /api/admin/dashboard`
+- `GET /api/admin/alerts`
+- `GET /api/admin/audit`
+- `GET /api/admin/errors`
