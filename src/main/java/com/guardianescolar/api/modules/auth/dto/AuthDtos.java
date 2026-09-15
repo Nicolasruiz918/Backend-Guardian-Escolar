@@ -1,5 +1,6 @@
 package com.guardianescolar.api.modules.auth.dto;
 
+import com.guardianescolar.api.modules.security.domain.TwoFactorMethods;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -58,7 +59,7 @@ public final class AuthDtos {
     }
 
     public record RequestTwoFactorRequest(
-            @NotBlank @Pattern(regexp = "EMAIL|SMS", message = "método debe ser EMAIL o SMS") String method) {
+            @NotBlank @Pattern(regexp = TwoFactorMethods.REGEX, message = "método debe ser EMAIL o SMS") String method) {
     }
 
     public record ResendTwoFactorRequest(
@@ -68,7 +69,7 @@ public final class AuthDtos {
     public record VerifyTwoFactorRequest(
             @NotBlank String token,
             @NotBlank @Pattern(regexp = "^\\d{6}$", message = "código debe tener 6 dígitos") String code,
-            @Pattern(regexp = "EMAIL|SMS", message = "método debe ser EMAIL o SMS") String method) {
+            @Pattern(regexp = TwoFactorMethods.REGEX, message = "método debe ser EMAIL o SMS") String method) {
     }
 
     public record DisableTwoFactorRequest(
@@ -107,3 +108,4 @@ public final class AuthDtos {
             String twoFactorMethod) {
     }
 }
+
