@@ -2,6 +2,7 @@ package com.guardianescolar.api.modules.auth.service;
 
 import com.guardianescolar.api.modules.auth.dto.AuthDtos;
 import com.guardianescolar.api.modules.notifications.service.SmsService;
+import com.guardianescolar.api.modules.security.domain.TwoFactorMethods;
 import com.guardianescolar.api.modules.security.domain.User;
 import com.guardianescolar.api.modules.security.repository.UserRepository;
 import java.security.SecureRandom;
@@ -58,7 +59,7 @@ public class TwoFactorService {
 
     public User disable(User user) {
         user.setTwoFactorEnabled(false);
-        user.setTwoFactorMethod("EMAIL");
+        user.setTwoFactorMethod(TwoFactorMethods.EMAIL);
         clearCode(user);
         return userRepository.save(user);
     }
@@ -71,7 +72,7 @@ public class TwoFactorService {
     }
 
     private void sendCode(User user, String method) {
-        if ("SMS".equalsIgnoreCase(method)) {
+        if (TwoFactorMethods.SMS.equalsIgnoreCase(method)) {
             if (!smsService.send(user.getPhone(), "Your GPS Guardian Escolar code is: " + user.getTwoFactorCode())) {
                 throw new IllegalStateException("Could not send the SMS code");
             }
@@ -102,3 +103,4 @@ public class TwoFactorService {
                 user.getTwoFactorMethod());
     }
 }
+

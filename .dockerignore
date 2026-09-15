@@ -1,0 +1,13 @@
+target/
+.mvn/
+.env
+*.env
+!.env.example
+*.log
+hs_err_pid*.log
+*.iml
+.idea/
+.vscode/
+.github/
+firebase-service-account*.json
+*firebase*service*account*.json

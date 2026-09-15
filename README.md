@@ -1,19 +1,26 @@
-# HU-17- Zonas Seguras
+# HU-18- Notificaciones
 
 ## Objetivo
 
-Permitir la administracion de zonas seguras asociadas a estudiantes para apoyar el monitoreo de ubicaciones relevantes.
+Implementar la gestion de notificaciones, configuraciones de aviso y dispositivos del usuario para recibir alertas del sistema.
 
 ## Cambios agregados
 
-- Modulo `zones` con entidad, DTOs, repositorio, controlador y servicio.
-- Creacion, consulta, actualizacion y eliminacion logica de zonas seguras.
-- Validaciones de acceso sobre estudiantes asociados al usuario autenticado.
-- Preparacion para alertas relacionadas con entrada o salida de zonas.
+- Modulo `notifications` con controlador, DTOs, entidades, repositorios y servicios.
+- Consulta de notificaciones recibidas.
+- Marcado de notificaciones como leidas.
+- Configuracion de preferencias de notificacion.
+- Registro y desactivacion de dispositivos de usuario.
+- Integracion base con Expo Push.
+- Integracion configurable con SMS.
+- Separacion de responsabilidades en mapper y servicio de entrega.
 
 ## Endpoints principales
 
-- `GET /api/safe-zones`
-- `POST /api/safe-zones`
-- `PUT /api/safe-zones/{id}`
-- `DELETE /api/safe-zones/{id}`
+- `GET /api/notifications`
+- `PATCH /api/notifications/{id}/read`
+- `GET /api/notifications/settings`
+- `PUT /api/notifications/settings`
+- `POST /api/devices`
+- `GET /api/devices`
+- `DELETE /api/devices/{id}`
